@@ -3,7 +3,7 @@ package prodcontrol
 import (
 	"Backend-Golang/src/helper"
 	"Backend-Golang/src/middleware"
-	"Backend-Golang/src/models/prodmodels"
+	models "Backend-Golang/src/models/prodmodels"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -16,12 +16,13 @@ import (
 	"time"
 )
 
-func Product(w http.ResponseWriter, r *http.Request) {// GET & PUT & DELETE
+func Product(w http.ResponseWriter, r *http.Request) { // GET & PUT & DELETE
 	middleware.GetCleanedInput(r)
 	helper.EnableCors(w)
 	id := r.URL.Path[len("/product/"):]
 	if r.Method == "GET" {
-		result, err := json.Marshal(prodmodels.Select(id).Value)
+		// result, err := json.Marshal(models.SelectProduct(id).Value)
+		result, err := json.Marshal(models.SelectProduct(id))
 		if err != nil {
 			http.Error(w, "Failed convert to Json", http.StatusInternalServerError)
 			return
@@ -30,26 +31,27 @@ func Product(w http.ResponseWriter, r *http.Request) {// GET & PUT & DELETE
 		return
 
 	} else if r.Method == "PUT" {
-		var input prodmodels.Product
+		var input models.Product
 		err := json.NewDecoder(r.Body).Decode(&input)
 		if err != nil {
 			http.Error(w, "Failed convert to Json", http.StatusInternalServerError)
 			return
 		}
 
-		newProduct := prodmodels.Product{
-			Name :input.Name,
-			Rating : input.Rating,
-			Price : input.Price,
-			Color : input.Color,
-			Size: input.Size,
-			Amount: input.Amount,
-			Condition: input.Condition,
+		newProduct := models.Product{
+			Name:        input.Name,
+			Rating:      input.Rating,
+			Price:       input.Price,
+			Color:       input.Color,
+			Size:        input.Size,
+			Amount:      input.Amount,
+			Condition:   input.Condition,
 			Description: input.Description,
-			Sellerid: input.Sellerid,
+			Sellerid:    input.Sellerid,
+			CategoryId:  input.CategoryId,
 		}
 
-		prodmodels.Updates(id, &newProduct)
+		models.UpdatesProduct(id, &newProduct)
 		msg := map[string]string{
 			"Message": "Product Updated",
 		}
@@ -63,7 +65,7 @@ func Product(w http.ResponseWriter, r *http.Request) {// GET & PUT & DELETE
 		w.Write(result)
 
 	} else if r.Method == "DELETE" {
-		prodmodels.Deletes(id)
+		models.DeletesProduct(id)
 		msg := map[string]string{
 			"Message": "Product Deleted",
 		}
@@ -81,50 +83,52 @@ func Product(w http.ResponseWriter, r *http.Request) {// GET & PUT & DELETE
 }
 
 func SelectProducts(w http.ResponseWriter, r *http.Request) {
-		if r.Method == "GET" {
-				res := prodmodels.SelectAll()
-				result, err := json.Marshal(res.Value)
-				if err != nil {
-					http.Error(w, "Failed convert to Json", http.StatusInternalServerError)
-					return
-				}
-				w.Write(result)
-				return
-			}
+	if r.Method == "GET" {
+		res := models.SelectAllProduct()
+		// result, err := json.Marshal(res.Value)
+		result, err := json.Marshal(res)
+		if err != nil {
+			http.Error(w, "Failed convert to Json", http.StatusInternalServerError)
+			return
+		}
+		w.Write(result)
+		return
+	}
 }
 
-func Products(w http.ResponseWriter, r *http.Request) {// GET & POST
+func Products(w http.ResponseWriter, r *http.Request) { // GET & POST
 	middleware.GetCleanedInput(r)
 	helper.EnableCors(w) //memungkinkan sharing sesama localhost
 	if r.Method == "GET" {
-		pageOld := r.URL.Query().Get("page")// ini string
+		pageOld := r.URL.Query().Get("page") // ini string
 		limitOld := r.URL.Query().Get("limit")
-		page, _ := strconv.Atoi(pageOld)//ini diubah dari string ke integer
+		page, _ := strconv.Atoi(pageOld) //ini diubah dari string ke integer
 		limit, _ := strconv.Atoi(limitOld)
-		offset := (page -1 ) * limit
+		offset := (page - 1) * limit
 		sort := r.URL.Query().Get("sort")
-		if sort == ""{
+		if sort == "" {
 			sort = "ASC"
 		}
 		sortby := r.URL.Query().Get("sortBy")
-		if sortby == ""{
+		if sortby == "" {
 			sortby = "name"
 		}
 		sort = sortby + " " + strings.ToLower(sort)
-		respons := prodmodels.FindCond(sort, limit, offset)
-		totalData := prodmodels.CountData()
+		respons := models.FindCondProduct(sort, limit, offset)
+		totalData := models.CountDataProduct()
 		totalPage := math.Ceil(float64(totalData) / float64(limit))
-		result := map[string]interface{} {
+		result := map[string]interface{}{
 			"status": "Berhasil",
-			"data":	respons.Value,
+			// "data":        respons.Value,
+			"data":        respons,
 			"currentPage": page,
-			"limit": limit, //tadinya limitOld
-			"totalData" : totalData,
-			"totalPage": totalPage,
+			"limit":       limit, //tadinya limitOld
+			"totalData":   totalData,
+			"totalPage":   totalPage,
 		}
 
 		res, err := json.Marshal(result)
-		if err != nil{
+		if err != nil {
 			http.Error(w, "Gagal Konversi Json", http.StatusInternalServerError)
 			return
 		}
@@ -137,27 +141,27 @@ func Products(w http.ResponseWriter, r *http.Request) {// GET & POST
 		// fmt.Fprint(w. offset)
 		// fmt.Fprint(w. page)
 		// fmt.Fprint(w. limit)
-		
 
 	} else if r.Method == "POST" {
-		var input prodmodels.Product
+		var input models.Product
 		err := json.NewDecoder(r.Body).Decode(&input)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		item := prodmodels.Product{
-			Name :input.Name,
-			Rating : input.Rating,
-			Price : input.Price,
-			Color : input.Color,
-			Size: input.Size,
-			Amount: input.Amount,
-			Condition: input.Condition,
+		item := models.Product{
+			Name:        input.Name,
+			Rating:      input.Rating,
+			Price:       input.Price,
+			Color:       input.Color,
+			Size:        input.Size,
+			Amount:      input.Amount,
+			Condition:   input.Condition,
 			Description: input.Description,
-			Sellerid: input.Sellerid,
+			Sellerid:    input.Sellerid,
+			CategoryId:  input.CategoryId,
 		}
-		prodmodels.Post(&item)
+		models.PostProduct(&item)
 		w.WriteHeader(http.StatusCreated)
 		msg := map[string]string{
 			"Message": "Product Created",
@@ -188,10 +192,10 @@ func Handle_upload(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	defer file.Close()//file harus ditutup
+	defer file.Close() //file harus ditutup
 	ext := filepath.Ext(handler.Filename)
 	ext = strings.ToLower(ext)
-	allowedExts := strings.Split(AllowedExtensions, ",")//pecah pakai method split
+	allowedExts := strings.Split(AllowedExtensions, ",") //pecah pakai method split
 	validExtension := false
 	for _, allowedExt := range allowedExts {
 		if ext == allowedExt {
@@ -250,7 +254,8 @@ func Handle_upload(w http.ResponseWriter, r *http.Request) {
 func SearchProduct(w http.ResponseWriter, r *http.Request) {
 	keyWord := r.URL.Query().Get("search")
 
-	res, err := json.Marshal(prodmodels.FindData(keyWord).Value)
+	// res, err := json.Marshal(models.FindDataProduct(keyWord).Value)
+	res, err := json.Marshal(models.FindDataProduct(keyWord))
 	if err != nil {
 		http.Error(w, "Gagal Konversi Json", http.StatusInternalServerError)
 		return

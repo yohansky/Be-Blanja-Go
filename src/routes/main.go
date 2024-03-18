@@ -3,6 +3,7 @@ package routes
 import (
 	"Backend-Golang/src/controllers/addcontrol"
 	"Backend-Golang/src/controllers/bagcontrol"
+	"Backend-Golang/src/controllers/catecontrol"
 	"Backend-Golang/src/controllers/checkcontrol"
 	"Backend-Golang/src/controllers/coscontrol"
 	"Backend-Golang/src/controllers/paycontrol"
@@ -19,6 +20,7 @@ import (
 )
 
 func Router() {
+	// membuat web static untuk upload image
 	fileServer := http.FileServer(http.Dir("src/uploads"))
 
 	http.Handle("/img/", http.StripPrefix("/img/", fileServer))
@@ -27,6 +29,7 @@ func Router() {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, "hello World!")
 	})
+	//ini testing untuk melihat,dan add ,
 	http.Handle("/costumers", helmet.Secure(middleware.XssMiddleware(http.HandlerFunc(coscontrol.Costumers))))
 	http.Handle("/costumer/", helmet.Secure(middleware.XssMiddleware(http.HandlerFunc(coscontrol.Costumer))))
 	http.Handle("/sellers", helmet.Secure(middleware.XssMiddleware(http.HandlerFunc(selcontrol.Sellers))))
@@ -53,7 +56,8 @@ func Router() {
 	//Route User
 	http.Handle("/register-seller", helmet.Secure(middleware.XssMiddleware(http.HandlerFunc(usercontrol.RegisterSeller))))
 	http.Handle("/register-customer", helmet.Secure(middleware.XssMiddleware(http.HandlerFunc(usercontrol.RegisterCustomer))))
-	http.Handle("/login", helmet.Secure(middleware.XssMiddleware(http.HandlerFunc(usercontrol.Login))))
+	// http.Handle("/login", helmet.Secure(middleware.XssMiddleware(http.HandlerFunc(usercontrol.Login))))
+	http.Handle("/login", helmet.Secure(http.HandlerFunc(usercontrol.Login)))
 
 	http.Handle("/update-seller/", helmet.Secure(middleware.JwtMiddleware(http.HandlerFunc(usercontrol.UpdateSeller))))
 	http.Handle("/update-customer/", helmet.Secure(middleware.JwtMiddleware(http.HandlerFunc(usercontrol.UpdateCustomer))))
@@ -65,8 +69,9 @@ func Router() {
 	http.Handle("/refresh-token", helmet.Secure(middleware.JwtMiddleware(http.HandlerFunc(usercontrol.RefreshToken))))
 
 	//Route Product + Upload + Search
-	http.Handle("/products", helmet.Secure(middleware.JwtMiddleware(http.HandlerFunc(prodcontrol.Products)))) //pagination
+	// http.Handle("/products", helmet.Secure(middleware.JwtMiddleware(http.HandlerFunc(prodcontrol.Products)))) //pagination
 	// http.Handle("/products", helmet.Secure((http.HandlerFunc(prodcontrol.Products))))//pagination
+	http.Handle("/products", helmet.Secure((http.HandlerFunc(prodcontrol.Products))))
 	http.Handle("/selectproducts", helmet.Secure(middleware.JwtMiddleware(http.HandlerFunc(prodcontrol.SelectProducts))))
 	// http.Handle("/product/", helmet.Secure(middleware.JwtMiddleware(http.HandlerFunc(prodcontrol.Product))))
 	http.Handle("/product/", helmet.Secure((http.HandlerFunc(prodcontrol.Product))))
@@ -89,4 +94,8 @@ func Router() {
 	//Route Payment
 	http.Handle("/payments", helmet.Secure(middleware.JwtMiddleware(http.HandlerFunc(paycontrol.Payments))))
 	http.Handle("/payment/", helmet.Secure(middleware.JwtMiddleware(http.HandlerFunc(paycontrol.Payment))))
+
+	// Route Category
+	http.Handle("/categories", helmet.Secure((http.HandlerFunc(catecontrol.Categories))))
+	http.Handle("/category/", helmet.Secure((http.HandlerFunc(catecontrol.Category))))
 }

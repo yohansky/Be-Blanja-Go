@@ -13,8 +13,6 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-
-
 func RegisterSeller(w http.ResponseWriter, r *http.Request) {
 	middleware.GetCleanedInput(r)
 	helper.EnableCors(w)
@@ -31,12 +29,12 @@ func RegisterSeller(w http.ResponseWriter, r *http.Request) {
 		Password := string(hashPassword)
 
 		item := usermodel.User{
-			Name: input.Name,
-			Email: input.Email,
-			Password: Password,
+			Name:        input.Name,
+			Email:       input.Email,
+			Password:    Password,
 			Phonenumber: input.Phonenumber,
-			Storename: input.Storename,
-			Role: "Seller",
+			Storename:   input.Storename,
+			Role:        "Seller",
 		}
 		usermodel.Post(&item)
 		w.WriteHeader(http.StatusCreated)
@@ -55,7 +53,7 @@ func RegisterSeller(w http.ResponseWriter, r *http.Request) {
 	} else {
 		http.Error(w, "Method tidak diizinkan", http.StatusMethodNotAllowed)
 	}
-	
+
 }
 
 func RegisterCustomer(w http.ResponseWriter, r *http.Request) {
@@ -73,12 +71,12 @@ func RegisterCustomer(w http.ResponseWriter, r *http.Request) {
 		Password := string(hashedPassword)
 
 		item := usermodel.User{
-			Name: input.Name,
-			Email: input.Email,
-			Password: Password,
+			Name:        input.Name,
+			Email:       input.Email,
+			Password:    Password,
 			Phonenumber: "-",
-			Storename: "-",
-			Role: "Customer",
+			Storename:   "-",
+			Role:        "Customer",
 		}
 		usermodel.Post(&item)
 		w.WriteHeader(http.StatusCreated)
@@ -93,16 +91,16 @@ func RegisterCustomer(w http.ResponseWriter, r *http.Request) {
 		if _, err := w.Write(res); err != nil {
 			http.Error(w, "Failed to write response", http.StatusInternalServerError)
 			return
-		}	
+		}
 
 	} else {
 		http.Error(w, "Method tidak diizinkan", http.StatusMethodNotAllowed)
 	}
-	
+
 }
 
 func Login(w http.ResponseWriter, r *http.Request) {
-	middleware.GetCleanedInput(r)
+	// middleware.GetCleanedInput(r)
 	helper.EnableCors(w)
 	if r.Method == "POST" {
 		var input usermodel.User
@@ -133,7 +131,6 @@ func Login(w http.ResponseWriter, r *http.Request) {
 			PasswordSecond = user.Password
 		}
 
-		
 		if err := bcrypt.CompareHashAndPassword([]byte(PasswordSecond), []byte(input.Password)); err != nil {
 			w.WriteHeader(http.StatusNotFound)
 			fmt.Fprintf(w, "Password not Found")
@@ -145,7 +142,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Failed to generate tokens", http.StatusInternalServerError)
 			return
 		}
-		
+
 		// if input.Role == "Seller" {
 		// 	input.Role = "Seller"
 		// } else if input.Role == "Customer"{
@@ -153,7 +150,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		// }
 		item := map[string]string{
 			"Email": input.Email,
-			"Role": string(input.Role),//User.Role
+			"Role":  "Seller", //User.Role
 			"Token": token,
 		}
 		res, err := json.Marshal(item)
@@ -161,7 +158,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Gagal konversi ke Json", http.StatusInternalServerError)
 			return
 		}
-		w.WriteHeader(http.StatusOK)
+		// w.WriteHeader(http.StatusOK)
 		w.Write(res)
 		// debug
 		// fmt.Fprintf(w, input.Email)
@@ -172,20 +169,20 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	} else {
 		http.Error(w, "Method tidak diizinkan", http.StatusMethodNotAllowed)
 	}
-	
+
 }
 
 func Users(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
-				res := usermodel.SelectAll()
-				result, err := json.Marshal(res.Value)
-				if err != nil {
-					http.Error(w, "Failed convert to Json", http.StatusInternalServerError)
-					return
-				}
-				w.Write(result)
-				return
-			}
+		res := usermodel.SelectAll()
+		result, err := json.Marshal(res.Value)
+		if err != nil {
+			http.Error(w, "Failed convert to Json", http.StatusInternalServerError)
+			return
+		}
+		w.Write(result)
+		return
+	}
 }
 
 func User(w http.ResponseWriter, r *http.Request) {
@@ -201,20 +198,20 @@ func User(w http.ResponseWriter, r *http.Request) {
 		w.Write(result)
 		return
 	} else if r.Method == "DELETE" {
-				usermodel.Deletes(id)
-				msg := map[string]string{
-					"Message": "User Deleted",
-				}
-				result, err := json.Marshal(msg)
-				if err != nil {
-					http.Error(w, "Failed convert to Json", http.StatusInternalServerError)
-					return
-				}
-				w.WriteHeader(http.StatusOK)
-				w.Write(result)
-			} else {
-				http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-			}
+		usermodel.Deletes(id)
+		msg := map[string]string{
+			"Message": "User Deleted",
+		}
+		result, err := json.Marshal(msg)
+		if err != nil {
+			http.Error(w, "Failed convert to Json", http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Write(result)
+	} else {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	}
 }
 
 func UpdateSeller(w http.ResponseWriter, r *http.Request) {
@@ -233,11 +230,11 @@ func UpdateSeller(w http.ResponseWriter, r *http.Request) {
 		Password := string(hashedPassword)
 
 		newSeller := usermodel.User{
-			Name: input.Name,
-			Email: input.Email,
-			Password: Password,
+			Name:        input.Name,
+			Email:       input.Email,
+			Password:    Password,
 			Phonenumber: input.Phonenumber,
-			Storename: input.Storename,
+			Storename:   input.Storename,
 		}
 
 		usermodel.UpdatesSeller(id, &newSeller)
@@ -273,8 +270,8 @@ func UpdateCustomer(w http.ResponseWriter, r *http.Request) {
 		Password := string(hashedPassword)
 
 		newCustomer := usermodel.User{
-			Name: input.Name,
-			Email: input.Email,
+			Name:     input.Name,
+			Email:    input.Email,
 			Password: Password,
 		}
 
@@ -313,10 +310,10 @@ func RefreshToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	email := claims["email"].(string)//di konversi menjadi string
+	email := claims["email"].(string) //di konversi menjadi string
 	role := claims["role"].(string)
 
-	newToken, err := helper.GenerateToken(os.Getenv("SECRETKEY"), email, role)//tambahkan role
+	newToken, err := helper.GenerateToken(os.Getenv("SECRETKEY"), email, role) //tambahkan role
 	if err != nil {
 		http.Error(w, "Failed to generate new token", http.StatusInternalServerError)
 		return

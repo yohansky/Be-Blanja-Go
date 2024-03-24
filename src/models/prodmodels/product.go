@@ -65,7 +65,8 @@ func FindCond(sort string, limit int, offset int) *gorm.DB {
 
 func CountData() int {
 	var result int
-	config.DB.Table("products").Count(&result)
+	// kodingan untuk menampilkan yang deleted atnya null
+	config.DB.Table("products").Where("deleted_at IS NULL").Count(&result)
 	return result
 }
 

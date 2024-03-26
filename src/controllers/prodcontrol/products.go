@@ -6,7 +6,6 @@ import (
 	models "Backend-Golang/src/models/prodmodels"
 	"encoding/json"
 	"fmt"
-	"io"
 	"math"
 	"net/http"
 	"os"
@@ -14,6 +13,9 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/cloudinary/cloudinary-go"
+	"github.com/cloudinary/cloudinary-go/api/uploader"
 )
 
 func Product(w http.ResponseWriter, r *http.Request) { // GET & PUT & DELETE
@@ -180,6 +182,7 @@ func Handle_upload(w http.ResponseWriter, r *http.Request) {
 		AllowedExtensions = ".jpg,.jpeg,.pdf,.png"
 		MaxFileSize       = 2 << 20 // 2 MB
 	)
+
 	// Memeriksa method request, harus POST
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -187,15 +190,16 @@ func Handle_upload(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Mendapatkan file dari form
-	file, handler, err := r.FormFile("file") //untuk menangkap request body yang typenya file
+	file, handler, err := r.FormFile("file")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	defer file.Close() //file harus ditutup
+	defer file.Close()
+
 	ext := filepath.Ext(handler.Filename)
 	ext = strings.ToLower(ext)
-	allowedExts := strings.Split(AllowedExtensions, ",") //pecah pakai method split
+	allowedExts := strings.Split(AllowedExtensions, ",")
 	validExtension := false
 	for _, allowedExt := range allowedExts {
 		if ext == allowedExt {
@@ -215,37 +219,45 @@ func Handle_upload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Membuat format waktu dengan detik
+	// Menggunakan timestamp untuk membuat nama file unik
 	timestamp := time.Now().Format("20060102_150405")
 
-	// Membuat nama unik untuk file
-	filename := fmt.Sprintf("src/uploads/%s_%s", timestamp, handler.Filename)
-
-	// Membuat file untuk menyimpan gambar
-	out, err := os.Create(filename)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	// Menginisialisasi konfigurasi Cloudinary
+	cloudinaryURL := os.Getenv("CLOUDINARY_URL") // Ambil URL Cloudinary dari variabel lingkungan
+	if cloudinaryURL == "" {
+		http.Error(w, "Cloudinary URL not found", http.StatusInternalServerError)
 		return
 	}
-	defer out.Close()
-
-	// Menyalin isi file yang diupload ke file yang baru dibuat
-	_, err = io.Copy(out, file)
+	cld, err := cloudinary.NewFromURL(cloudinaryURL)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	// helper.ValidateUpload(w, handler) // harus di gabung sama controller
-	// helper.Upload(w, file, handler) // bisa dipakai
+	// Konfigurasi uploader Cloudinary
+	uploadParams := uploader.UploadParams{
+		PublicID:  fmt.Sprintf("%s_%s", timestamp, handler.Filename),
+		Overwrite: true,
+	}
+
+	// Mengunggah file ke Cloudinary
+	uploadResult, err := cld.Upload.Upload(r.Context(), file, uploadParams)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
 	// Menyampaikan respons berhasil
 	msg := map[string]string{
-		"Message": "File uploaded successfully",
+		"Message":        "File uploaded successfully",
+		"PublicID":       uploadResult.PublicID,
+		"SecureURL":      uploadResult.SecureURL,
+		"OriginalWidth":  fmt.Sprintf("%d", uploadResult.Width),
+		"OriginalHeight": fmt.Sprintf("%d", uploadResult.Height),
 	}
 	res, err := json.Marshal(msg)
 	if err != nil {
-		http.Error(w, "Gagal Konversi Json", http.StatusInternalServerError)
+		http.Error(w, "Failed to convert JSON", http.StatusInternalServerError)
 		return
 	}
 	w.Write(res)

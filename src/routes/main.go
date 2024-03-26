@@ -77,7 +77,8 @@ func Router() {
 	http.Handle("/product/", helmet.Secure((http.HandlerFunc(prodcontrol.Product))))
 	http.Handle("/product-search/", helmet.Secure(middleware.JwtMiddleware(http.HandlerFunc(prodcontrol.SearchProduct))))
 
-	http.Handle("/upload", helmet.Secure(middleware.JwtMiddleware(http.HandlerFunc(prodcontrol.Handle_upload))))
+	// http.Handle("/upload", helmet.Secure(middleware.JwtMiddleware(http.HandlerFunc(prodcontrol.Handle_upload))))
+	http.Handle("/upload", helmet.Secure((http.HandlerFunc(prodcontrol.Handle_upload))))
 
 	//Route Bag (Rename Cart)
 	http.Handle("/bags", helmet.Secure(middleware.JwtMiddleware(http.HandlerFunc(bagcontrol.Bags))))
